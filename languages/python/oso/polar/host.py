@@ -5,6 +5,10 @@ from .exceptions import (
     PolarRuntimeError,
     UnregisteredClassError,
     DuplicateClassAliasError,
+    MissingConstructorError,
+    UnregisteredInstanceError,
+    DuplicateInstanceRegistrationError,
+    UnexpectedPolarTypeError,
 )
 from .variable import Variable
 from .predicate import Predicate
@@ -51,12 +55,12 @@ class Host:
         try:
             return self.constructors[name]
         except:
-            raise PolarRuntimeError(f"missing constructor for class {name}")
+            raise MissingConstructorError(name)
 
     def get_instance(self, id):
         """Look up Python instance by id."""
         if id not in self.instances:
-            raise PolarRuntimeError(f"unregistered instance {id}")
+            raise UnregisteredInstanceError(id)
         return self.instances[id]
 
     def cache_instance(self, instance, id=None):
@@ -73,7 +77,9 @@ class Host:
         if isinstance(constructor, str):
             constructor = getattr(cls, constructor)
         if id in self.instances:
-            raise PolarRuntimeError(f"instance {id} is already registered")
+            raise DuplicateInstanceRegistrationError(id)
+
+        # TODO: maybe use try/except to wrap failure as PolarRuntimeError
         instance = (
             constructor(**initargs)
             if isinstance(initargs, dict)
@@ -192,4 +198,4 @@ class Host:
         elif tag == "Variable":
             return Variable(value[tag])
 
-        raise PolarRuntimeError(f"cannot convert {value} to Python")
+        raise UnexpectedPolarTypeError(tag)

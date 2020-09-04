@@ -2,7 +2,12 @@ from collections.abc import Iterable
 import json
 
 from _polar_lib import lib
-from .exceptions import PolarApiError
+from .exceptions import (
+    PolarApiError,
+    InvalidCallError,
+    InvalidConstructorError,
+    PolarRuntimeError,
+)
 from .ffi import Polar as FfiPolar, Query as FfiQuery
 from .host import Host
 from .predicate import Predicate
@@ -64,6 +69,8 @@ class Query:
                 }
                 trace = data["trace"]
                 yield {"bindings": bindings, "trace": trace}
+            else:
+                raise PolarRuntimeError(f"Unhandled event: {json.dump(event)}")
 
     def handle_make_external(self, data):
         id = data["instance_id"]
@@ -76,7 +83,7 @@ class Query:
             cls_name = constructor["Call"]["name"]
             initargs = [self.host.to_python(arg) for arg in constructor["Call"]["args"]]
         else:
-            raise PolarApiError("Bad constructor")
+            raise InvalidConstructorError()
         self.host.make_instance(cls_name, initargs, id)
 
     def handle_external_call(self, data):
@@ -100,7 +107,7 @@ class Query:
                 args = [self.host.to_python(arg) for arg in data["args"]]
                 result = attr(*args)
             elif not data["args"] is None:
-                raise RuntimeError(
+                raise InvalidCallError(
                     f"tried to call '{attribute}' but it is not callable"
                 )
             else:  # If it's just an attribute, it's the result.

@@ -2,7 +2,7 @@ from collections.abc import Iterable
 import json
 
 from _polar_lib import lib
-from .exceptions import PolarApiException
+from .exceptions import PolarApiError
 from .ffi import Polar as FfiPolar, Query as FfiQuery
 from .host import Host
 from .predicate import Predicate
@@ -76,7 +76,7 @@ class Query:
             cls_name = constructor["Call"]["name"]
             initargs = [self.host.to_python(arg) for arg in constructor["Call"]["args"]]
         else:
-            raise PolarApiException("Bad constructor")
+            raise PolarApiError("Bad constructor")
         self.host.make_instance(cls_name, initargs, id)
 
     def handle_external_call(self, data):

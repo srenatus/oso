@@ -1,6 +1,11 @@
 """Translate between Polar and the host language (Python)."""
 
-from .exceptions import PolarApiException, PolarRuntimeException
+from .exceptions import (
+    PolarApiError,
+    PolarRuntimeError,
+    UnregisteredClassError,
+    DuplicateClassAliasError,
+)
 from .variable import Variable
 from .predicate import Predicate
 
@@ -29,15 +34,13 @@ class Host:
         try:
             return self.classes[name]
         except KeyError:
-            raise PolarRuntimeException(f"unregistered class {name}")
+            raise UnregisteredClassError(name)
 
     def cache_class(self, cls, name=None, constructor=None):
         """Cache Python class by name."""
-        if not isinstance(cls, type):
-            raise PolarApiException(f"{cls} is not a class")
         name = cls.__name__ if name is None else name
-        if not isinstance(name, str):
-            raise PolarApiException(f"{name} is not a class name")
+        if name in self.classes.keys():
+            raise DuplicateClassAliasError(name, self.get_class(name), cls)
 
         self.classes[name] = cls
         self.constructors[name] = constructor or cls
@@ -48,12 +51,12 @@ class Host:
         try:
             return self.constructors[name]
         except:
-            raise PolarRuntimeException(f"missing constructor for class {name}")
+            raise PolarRuntimeError(f"missing constructor for class {name}")
 
     def get_instance(self, id):
         """Look up Python instance by id."""
         if id not in self.instances:
-            raise PolarRuntimeException(f"unregistered instance {id}")
+            raise PolarRuntimeError(f"unregistered instance {id}")
         return self.instances[id]
 
     def cache_instance(self, instance, id=None):
@@ -70,7 +73,7 @@ class Host:
         if isinstance(constructor, str):
             constructor = getattr(cls, constructor)
         if id in self.instances:
-            raise PolarRuntimeException(f"instance {id} is already registered")
+            raise PolarRuntimeError(f"instance {id} is already registered")
         instance = (
             constructor(**initargs)
             if isinstance(initargs, dict)
@@ -85,7 +88,7 @@ class Host:
             left = self.get_instance(left_instance_id)
             right = self.get_instance(right_instance_id)
             return left == right
-        except PolarRuntimeException:
+        except PolarRuntimeError:
             return False
 
     def isa(self, instance, class_tag) -> bool:
@@ -93,7 +96,7 @@ class Host:
             instance = self.to_python(instance)
             cls = self.get_class(class_tag)
             return isinstance(instance, cls)
-        except PolarRuntimeException:
+        except PolarRuntimeError:
             return False
 
     def is_subspecializer(self, instance_id, left_tag, right_tag) -> bool:
@@ -104,7 +107,7 @@ class Host:
             left = self.get_class(left_tag)
             right = self.get_class(right_tag)
             return mro.index(left) < mro.index(right)
-        except (ValueError, PolarRuntimeException):
+        except (ValueError, PolarRuntimeError):
             return False
 
     def operator(self, op, args):
@@ -122,11 +125,11 @@ class Host:
             elif op == "Neq":
                 return args[0] != args[1]
             else:
-                raise PolarRuntimeException(
+                raise PolarRuntimeError(
                     f"Unsupported external operation '{type(args[0])} {op} {type(args[1])}'"
                 )
         except TypeError:
-            raise PolarRuntimeException(
+            raise PolarRuntimeError(
                 f"External operation '{type(args[0])} {op} {type(args[1])}' failed."
             )
 
@@ -189,4 +192,4 @@ class Host:
         elif tag == "Variable":
             return Variable(value[tag])
 
-        raise PolarRuntimeException(f"cannot convert {value} to Python")
+        raise PolarRuntimeError(f"cannot convert {value} to Python")

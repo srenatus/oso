@@ -107,10 +107,8 @@ impl Host {
         Ok(())
     }
 
-    pub fn unify(&self, left: u64, right: u64) -> bool {
-        let _left = self.get_instance(left).unwrap();
-        let _right = self.get_instance(right).unwrap();
-        todo!("left == right")
+    pub fn unify(&self, _left: Term, _right: Term) -> bool {
+        todo!("left.to_rust() == right.to_rust()")
     }
 
     pub fn isa(&self, term: Term, class_tag: &Symbol) -> bool {

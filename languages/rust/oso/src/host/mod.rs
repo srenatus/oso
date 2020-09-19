@@ -37,6 +37,7 @@ fn downcast<T: Any>(any: &dyn Any) -> Result<&T, TypeError> {
 }
 
 /// Maintain mappings and caches for Rust classes & instances
+#[derive(Clone)]
 pub struct Host {
     /// Reference to the inner `Polar` instance
     polar: Arc<Polar>,

@@ -111,8 +111,8 @@ oso.load_str("?= x = 1 and E.sum([x, 2, x]) = 4 and [3, 2, x].index(1) = 2;")
 
 # Test unspecialized rule ordering
 result = oso.query_rule("testUnspecializedRuleOrder", "foo", Variable("y"))
+assert next(result)["bindings"]["y"] == 2 # wrong order, should fail
 assert next(result)["bindings"]["y"] == 1
-assert next(result)["bindings"]["y"] == 2
 result = oso.query_rule("testUnspecializedRuleOrder", "foo", Variable("x"))
 assert next(result)["bindings"]["x"] == 1
 assert next(result)["bindings"]["x"] == 2
